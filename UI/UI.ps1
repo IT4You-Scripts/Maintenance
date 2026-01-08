@@ -1,10 +1,15 @@
 # UI mínima estável — PowerShell 7, STA requerido
+# Mantém tela final por X segundos + botão "Fechar agora"
 $ErrorActionPreference = 'SilentlyContinue'
 $InformationPreference = 'SilentlyContinue'
 $WarningPreference = 'SilentlyContinue'
 $ProgressPreference = 'SilentlyContinue'
 
 Add-Type -AssemblyName PresentationFramework, PresentationCore
+
+# Configurações
+$MinWelcomeSeconds = 5      # tempo mínimo (boas-vindas) antes de trocar para final
+$FinalHoldSeconds  = 45     # tempo da tela final antes de fechar automaticamente
 
 # Textos
 $WelcomeText = @"
@@ -54,7 +59,7 @@ Atenciosamente, Equipe IT4You.
 
 function Get-ElapsedMinutes([datetime]$start){ [Math]::Ceiling(((Get-Date)-$start).TotalMinutes) }
 
-# Janela WPF simples (preto, 90% opaco, borda arredondada)
+# Janela WPF (preto, ~90% opaco, borda arredondada, fade)
 $win = New-Object Windows.Window
 $win.Title='Manutenção IT4You'
 $win.WindowStyle='None'
@@ -101,8 +106,31 @@ $progress.Margin='0,20,0,0'
 $progress.Text='Preparando a manutenção...'
 $stack.Children.Add($progress)
 
+# Contador de fechamento
+$closing = New-Object Windows.Controls.TextBlock
+$closing.TextWrapping='Wrap'
+$closing.FontSize=12
+$closing.Foreground=[Windows.Media.Brushes]::LightGray
+$closing.Margin='0,10,0,0'
+$closing.Text=''
+$stack.Children.Add($closing)
+
+# Botão Fechar agora
+$btn = New-Object Windows.Controls.Button
+$btn.Content='Fechar agora'
+$btn.HorizontalAlignment='Right'
+$btn.Margin='0,10,0,0'
+$btn.Visibility='Collapsed'
+$btn.Add_Click({
+  $animOut=New-Object Windows.Media.Animation.DoubleAnimation($win.Opacity,0.0,[TimeSpan]::FromSeconds(2))
+  $animOut.Completed={ $win.Close() }
+  $win.BeginAnimation([Windows.UIElement]::OpacityProperty,$animOut)
+})
+$stack.Children.Add($btn)
+
 $StatusPath='C:\IT4You\State\status.json'
 $StartTime=Get-Date
+$WelcomeDeadline=$StartTime.AddSeconds($MinWelcomeSeconds)
 
 # Timer 1s: lê status.json e atualiza
 $timer=New-Object Windows.Threading.DispatcherTimer
@@ -116,14 +144,38 @@ $timer.Add_Tick({
         $text.Text=''  # durante execução, mostra só o progresso
         if($s.step -eq $s.total -and $s.state -eq 'completed'){
           $timer.Stop()
+
+          # Garante tempo mínimo de boas-vindas (evita piscar)
+          $now=Get-Date
+          if($now -lt $WelcomeDeadline){
+            Start-Sleep -Seconds ([int]([Math]::Ceiling(($WelcomeDeadline-$now).TotalSeconds)))
+          }
+
+          # Monta texto final e inicia contagem para fechar
           $min=Get-ElapsedMinutes $StartTime
           $finalText=$FinalTextTemplate -replace '\$TempoTotal',$min
           $text.Text=$finalText
           $progress.Text=''
-          Start-Sleep -Seconds 3
-          $animOut=New-Object Windows.Media.Animation.DoubleAnimation($win.Opacity,0.0,[TimeSpan]::FromSeconds(2))
-          $animOut.Completed={ $win.Close() }
-          $win.BeginAnimation([Windows.UIElement]::OpacityProperty,$animOut)
+          $btn.Visibility='Visible'
+          $remaining=$FinalHoldSeconds
+          $closing.Text="Fechando em $remaining s..."
+
+          $t2=New-Object Windows.Threading.DispatcherTimer
+          $t2.Interval=[TimeSpan]::FromSeconds(1)
+          $t2.Add_Tick({
+            try{
+              $remaining--
+              if($remaining -le 0){
+                $t2.Stop()
+                $animOut=New-Object Windows.Media.Animation.DoubleAnimation($win.Opacity,0.0,[TimeSpan]::FromSeconds(2))
+                $animOut.Completed={ $win.Close() }
+                $win.BeginAnimation([Windows.UIElement]::OpacityProperty,$animOut)
+              } else {
+                $closing.Text="Fechando em $remaining s..."
+              }
+            }catch{}
+          })
+          $t2.Start()
         }
       }
     } else {
