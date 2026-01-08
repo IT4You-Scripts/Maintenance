@@ -150,21 +150,38 @@ function Show-StartScreen {
         $textContainer.Controls.Add($richTextBox)
 
         # Timer de UI (atualiza status e fecha quando SyncData.Encerrar = $true)
-        $timer = New-Object System.Windows.Forms.Timer
-        $timer.Interval = 500
-        $timer.Add_Tick({
-            if ($SyncData.Status)   { $lblStatus.Text = $SyncData.Status.ToUpper() }
-            if ($SyncData.Encerrar) {
-                $timer.Stop()
-                for ($i = 94; $i -ge 0; $i -= 2) {
-                    $form.Opacity = $i / 100
-                    [System.Windows.Forms.Application]::DoEvents()
-                    Start-Sleep -Milliseconds 10
-                }
-                $form.Close()
+$timer = New-Object System.Windows.Forms.Timer
+$timer.Interval = 500
+
+# IMPORTANTE: guarde o handler para poder remover depois
+$tickHandler = {
+    try {
+        # Se o form já foi destruído, não faça nada
+        if ($form.IsDisposed -or -not $form.IsHandleCreated) { return }
+
+        if ($SyncData.Status) { $lblStatus.Text = $SyncData.Status.ToUpper() }
+
+        if ($SyncData.Encerrar) {
+            # Pare e remova o handler ANTES de fechar
+            $timer.Stop()
+            $timer.remove_Tick($tickHandler)
+
+            # Fade-out e fechar
+            for ($i = 94; $i -ge 0; $i -= 2) {
+                if ($form.IsDisposed) { break }
+                $form.Opacity = $i / 100
+                [System.Windows.Forms.Application]::DoEvents()
+                Start-Sleep -Milliseconds 10
             }
-        })
-        $timer.Start()
+            if (-not $form.IsDisposed) { $form.Close() }
+        }
+    } catch {
+        # Evite propagar exceção para o pipeline
+    }
+}
+
+$timer.add_Tick($tickHandler)
+$timer.Start()
 
         [System.Windows.Forms.Application]::Run($form)
     }
