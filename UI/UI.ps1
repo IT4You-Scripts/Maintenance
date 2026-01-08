@@ -127,16 +127,16 @@ function Show-StartScreen {
 
         # Texto de boas-vindas (o seu, com quebras corretas)
         $richTextBox.Text = @"
-`n`n`n`n`n`n`n`n`nPrezado(a) usuário(a),
-`n`nEstamos iniciando a Manutenção Preventiva Automatizada em seu sistema operacional, conforme estabelecido em nosso contrato de manutenção.
-`n`nEste procedimento é realizado de forma totalmente autônoma, diretamente no seu computador, sem qualquer acesso remoto por parte de nossa equipe técnica. A execução segue rigorosamente o calendário de vistorias previamente agendado e comunicado por e-mail à sua empresa, garantindo segurança, transparência e eficiência.
-`n`nPara aprimorar ainda mais este processo, utilizamos recursos avançados de Inteligência Artificial, que permitem analisar o estado do sistema com maior precisão, identificar possíveis inconsistências e aplicar soluções automatizadas, adaptadas às necessidades específicas do seu equipamento.
-`n`nDurante a execução, solicitamos que evite utilizar o computador, a fim de assegurar a integridade da manutenção e prevenir interferências.
-`n`nNossa equipe de desenvolvimento trabalha continuamente para evoluir este script, incorporando melhorias e atualizações que asseguram que seu computador esteja sempre preparado para os desafios tecnológicos mais recentes.
-`n`nEm caso de dúvidas, estamos à disposição pelos canais oficiais:
-`n`nTelefone/WhatsApp: (11) 9.7191-1500
-`n`nE-mail: suporte@it4you.com.br
-`n`nAtenciosamente, Equipe IT4You.
+`n`n`n`n`n`n`nPrezado(a) usuário(a),
+`nEstamos iniciando a Manutenção Preventiva Automatizada em seu sistema operacional, conforme estabelecido em nosso contrato de manutenção.
+`nEste procedimento é realizado de forma totalmente autônoma, diretamente no seu computador, sem qualquer acesso remoto por parte de nossa equipe técnica. A execução segue rigorosamente o calendário de vistorias previamente agendado e comunicado por e-mail à sua empresa, garantindo segurança, transparência e eficiência.
+`nPara aprimorar ainda mais este processo, utilizamos recursos avançados de Inteligência Artificial, que permitem analisar o estado do sistema com maior precisão, identificar possíveis inconsistências e aplicar soluções automatizadas, adaptadas às necessidades específicas do seu equipamento.
+`nDurante a execução, solicitamos que evite utilizar o computador, a fim de assegurar a integridade da manutenção e prevenir interferências.
+`nNossa equipe de desenvolvimento trabalha continuamente para evoluir este script, incorporando melhorias e atualizações que asseguram que seu computador esteja sempre preparado para os desafios tecnológicos mais recentes.
+`nEm caso de dúvidas, estamos à disposição pelos canais oficiais:
+`nTelefone/WhatsApp: (11) 9.7191-1500
+`nE-mail: suporte@it4you.com.br
+`nAtenciosamente, Equipe IT4You.
 "@
 
         # Destaques
