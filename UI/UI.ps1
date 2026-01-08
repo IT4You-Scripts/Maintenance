@@ -1,4 +1,4 @@
-﻿# UI.ps1 – PowerShell 7 (executar em STA)
+# UI.ps1 – PowerShell 7 (executar em STA)
 Add-Type -AssemblyName PresentationFramework, PresentationCore
 
 # Textos (Boas-vindas e Finalização)

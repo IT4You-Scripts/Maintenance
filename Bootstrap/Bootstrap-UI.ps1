@@ -1,4 +1,4 @@
-﻿;# Bootstrap-UI.ps1 (PowerShell 5.1) – garante PS7 e executa UI em STA
+;# Bootstrap-UI.ps1 (PowerShell 5.1) – garante PS7 e executa UI em STA
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ErrorActionPreference = 'Stop'
 

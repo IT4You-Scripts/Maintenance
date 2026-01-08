@@ -1,4 +1,4 @@
-﻿New-Item -ItemType Directory -Path "C:\IT4You\Logs" -Force
+New-Item -ItemType Directory -Path "C:\IT4You\Logs" -Force
 New-Item -ItemType Directory -Path "C:\IT4You\State" -Force
 
 $computerName = $env:COMPUTERNAME
