@@ -1,5 +1,8 @@
 # UI.ps1 – PowerShell 7 (executar em STA)
 Add-Type -AssemblyName PresentationFramework, PresentationCore
+$ErrorActionPreference = 'SilentlyContinue'
+$InformationPreference = 'SilentlyContinue'
+$ProgressPreference = 'SilentlyContinue'
 
 # Textos (Boas-vindas e Finalização)
 $WelcomeText = @"

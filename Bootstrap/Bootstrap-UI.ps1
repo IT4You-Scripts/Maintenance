@@ -37,4 +37,7 @@ if (!(Test-PowerShell7)) {
 }
 
 $uiUrl = 'https://raw.githubusercontent.com/IT4You-Scripts/Maintenance/main/UI/UI.ps1'
-& pwsh -NoProfile -ExecutionPolicy Bypass -STA -Command "irm '$uiUrl' | iex"
+$encoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($code))
+Start-Process -FilePath pwsh `
+  -ArgumentList "-NoProfile -ExecutionPolicy Bypass -STA -EncodedCommand $encoded" `
+  -WindowStyle Hidden
