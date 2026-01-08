@@ -125,7 +125,7 @@ $UIScript = {
   $pText.Controls.Add($rtb)
 
   $rtb.Text = @"
-`n`n`n`n`n`n`n`n`nPrezado(a) usuário(a),
+`n`n`n`n`n`n`n`n`n`n`nPrezado(a) usuário(a),
 `nEstamos iniciando a Manutenção Preventiva Automatizada em seu sistema operacional, conforme estabelecido em nosso contrato de manutenção.
 `nEste procedimento é realizado de forma totalmente autônoma, diretamente no seu computador, sem qualquer acesso remoto por parte de nossa equipe técnica. A execução segue rigorosamente o calendário de vistorias previamente agendado e comunicado por e-mail à sua empresa, garantindo segurança, transparência e eficiência.
 `nPara aprimorar ainda mais este processo, utilizamos recursos avançados de Inteligência Artificial, que permitem analisar o estado do sistema com maior precisão, identificar possíveis inconsistências e aplicar soluções automatizadas, adaptadas às necessidades específicas do seu equipamento.
