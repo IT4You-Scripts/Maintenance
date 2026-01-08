@@ -1,24 +1,10 @@
-# UI/UI.ps1 – PowerShell 7+ em STA
-$ErrorActionPreference = 'Stop'
-$VerbosePreference = 'SilentlyContinue'
-$WarningPreference = 'SilentlyContinue'
-$DebugPreference = 'SilentlyContinue'
+# UI mínima estável — PowerShell 7, STA requerido
+$ErrorActionPreference = 'SilentlyContinue'
 $InformationPreference = 'SilentlyContinue'
+$WarningPreference = 'SilentlyContinue'
+$ProgressPreference = 'SilentlyContinue'
 
-# Caminhos e URLs
-$StateDir  = 'C:\IT4You\State'
-$StatusPath= Join-Path $StateDir 'status.json'
-$ErrorLog  = Join-Path $StateDir 'ui_error.log'
-$LogoUrl   = 'https://raw.githubusercontent.com/IT4You-Scripts/Maintenance/main/UI/Assets/logo.png'
-
-# Garantir pasta de estado
-if (-not (Test-Path $StateDir)) { New-Item -Type Directory -Path $StateDir -Force | Out-Null }
-
-# Função de log
-function Write-UiError([string]$msg) {
-  $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-  try { "$ts - $msg" | Out-File -FilePath $ErrorLog -Append -Encoding utf8 } catch { }
-}
+Add-Type -AssemblyName PresentationFramework, PresentationCore
 
 # Textos
 $WelcomeText = @"
@@ -66,123 +52,95 @@ E-mail: suporte@it4you.com.br
 Atenciosamente, Equipe IT4You.
 "@
 
-# Carregar WPF
-try {
-  Add-Type -AssemblyName PresentationFramework, PresentationCore
-} catch {
-  Write-UiError "Falha ao carregar WPF: $($_.Exception.Message)"
-  throw
-}
+function Get-ElapsedMinutes([datetime]$start){ [Math]::Ceiling(((Get-Date)-$start).TotalMinutes) }
 
-# Carregar logo
-$LogoBitmap = $null
-try {
-  $resp = Invoke-WebRequest -Uri $LogoUrl -UseBasicParsing
-  $mem  = New-Object IO.MemoryStream ($resp.Content)
-  $LogoBitmap = New-Object Windows.Media.Imaging.BitmapImage
-  $LogoBitmap.BeginInit(); $LogoBitmap.StreamSource=$mem; $LogoBitmap.CacheOption='OnLoad'; $LogoBitmap.EndInit()
-  $mem.Dispose()
-} catch {
-  Write-UiError "Falha ao carregar logo: $($_.Exception.Message)"
-}
-
-# Criar janela
+# Janela WPF simples (preto, 90% opaco, borda arredondada)
 $win = New-Object Windows.Window
-$win.Title = 'Manutenção IT4You'
-$win.WindowStartupLocation = 'CenterScreen'
-$win.WindowStyle = 'None'
-$win.AllowsTransparency = $true
-$win.Background = [Windows.Media.Brushes]::Black
-$win.Opacity = 0.0
-$win.Topmost = $true
-$win.Width = 820; $win.Height = 560
+$win.Title='Manutenção IT4You'
+$win.WindowStyle='None'
+$win.AllowsTransparency=$true
+$win.Background=[Windows.Media.Brushes]::Black
+$win.Opacity=0.0
+$win.Topmost=$true
+$win.Width=820; $win.Height=560
+$win.WindowStartupLocation='CenterScreen'
 
-# Container arredondado e translúcido (~90%)
-$border = New-Object Windows.Controls.Border
-$border.CornerRadius = 16
-$border.Background = New-Object Windows.Media.SolidColorBrush ([Windows.Media.Color]::FromArgb(230,0,0,0))
-$border.Padding = 20
-$win.Content = $border
+$border=New-Object Windows.Controls.Border
+$border.CornerRadius=16
+$border.Background=(New-Object Windows.Media.SolidColorBrush ([Windows.Media.Color]::FromArgb(230,0,0,0))) # ~90%
+$border.Padding=20
+$win.Content=$border
 
-# Layout
-$stack = New-Object Windows.Controls.StackPanel
-$stack.HorizontalAlignment = 'Stretch'
-$stack.VerticalAlignment   = 'Stretch'
-$border.Child = $stack
+$stack=New-Object Windows.Controls.StackPanel
+$border.Child=$stack
 
-# Logo
-$img = New-Object Windows.Controls.Image
-$img.HorizontalAlignment='Center'
-$img.VerticalAlignment='Top'
-$img.Width=220; $img.Height=80
-$img.Margin='0,0,0,10'
-if ($LogoBitmap) { $img.Source = $LogoBitmap }
-$stack.Children.Add($img)
+# Título
+$title=New-Object Windows.Controls.TextBlock
+$title.Text='Manutenção Preventiva Automatizada'
+$title.FontSize=22
+$title.FontWeight='Bold'
+$title.Foreground=[Windows.Media.Brushes]::White
+$title.Margin='0,0,0,10'
+$stack.Children.Add($title)
 
-# Texto principal (boas-vindas / final)
-$text = New-Object Windows.Controls.TextBlock
+# Texto principal dinâmico
+$text=New-Object Windows.Controls.TextBlock
 $text.TextWrapping='Wrap'
 $text.FontSize=16
 $text.Foreground=[Windows.Media.Brushes]::White
-$text.Margin='0,10,0,0'
+$text.Margin='0,5,0,0'
 $text.Text=$WelcomeText
 $stack.Children.Add($text)
 
 # Progresso
-$progress = New-Object Windows.Controls.TextBlock
+$progress=New-Object Windows.Controls.TextBlock
 $progress.TextWrapping='Wrap'
 $progress.FontSize=14
 $progress.Foreground=[Windows.Media.Brushes]::LightGray
 $progress.Margin='0,20,0,0'
-$progress.Text = 'Preparando a manutenção...'
+$progress.Text='Preparando a manutenção...'
 $stack.Children.Add($progress)
 
-$StartTime = Get-Date
+$StatusPath='C:\IT4You\State\status.json'
+$StartTime=Get-Date
 
-# Timer 1s
-$timer = New-Object Windows.Threading.DispatcherTimer
-$timer.Interval = [TimeSpan]::FromSeconds(1)
+# Timer 1s: lê status.json e atualiza
+$timer=New-Object Windows.Threading.DispatcherTimer
+$timer.Interval=[TimeSpan]::FromSeconds(1)
 $timer.Add_Tick({
-  try {
-    if (Test-Path $StatusPath) {
-      $s = Get-Content $StatusPath -Raw | ConvertFrom-Json
-      if ($s -and $s.step -and $s.total -and $s.title) {
-        $progress.Text = "Etapa $($s.step)/$($s.total) — $($s.title) [$($s.state)]"
-        $text.Text = ''
-        if ($s.step -eq $s.total -and $s.state -eq 'completed') {
+  try{
+    if(Test-Path $StatusPath){
+      $s=Get-Content $StatusPath -Raw | ConvertFrom-Json
+      if($s -and $s.step -and $s.total -and $s.title){
+        $progress.Text="Etapa $($s.step)/$($s.total) — $($s.title) [$($s.state)]"
+        $text.Text=''  # durante execução, mostra só o progresso
+        if($s.step -eq $s.total -and $s.state -eq 'completed'){
           $timer.Stop()
-          $min = [Math]::Ceiling(((Get-Date) - $StartTime).TotalMinutes)
-          $finalText = $FinalTextTemplate -replace '\$TempoTotal', $min
-          $text.Text = $finalText
-          $progress.Text = ''
+          $min=Get-ElapsedMinutes $StartTime
+          $finalText=$FinalTextTemplate -replace '\$TempoTotal',$min
+          $text.Text=$finalText
+          $progress.Text=''
           Start-Sleep -Seconds 3
-          $animOut = New-Object Windows.Media.Animation.DoubleAnimation($win.Opacity,0.0,[TimeSpan]::FromSeconds(2))
-          $animOut.Completed = { $win.Close() }
+          $animOut=New-Object Windows.Media.Animation.DoubleAnimation($win.Opacity,0.0,[TimeSpan]::FromSeconds(2))
+          $animOut.Completed={ $win.Close() }
           $win.BeginAnimation([Windows.UIElement]::OpacityProperty,$animOut)
         }
       }
     } else {
-      $progress.Text = 'Preparando a manutenção...'
-      $text.Text = $WelcomeText
+      $text.Text=$WelcomeText
+      $progress.Text='Preparando a manutenção...'
     }
-  } catch {
-    Write-UiError "Tick error: $($_.Exception.Message)"
-  }
+  }catch{}
 })
 
-# Fade-in 2s
+# Fade-in 2s e iniciar timer
 $win.Add_Loaded({
-  try {
-    $animIn = New-Object Windows.Media.Animation.DoubleAnimation(0.0,0.9,[TimeSpan]::FromSeconds(2))
-    $win.BeginAnimation([Windows.UIElement]::OpacityProperty,$animIn)
-    $timer.Start()
-  } catch {
-    Write-UiError "Loaded handler error: $($_.Exception.Message)"
-  }
+  $animIn=New-Object Windows.Media.Animation.DoubleAnimation(0.0,0.9,[TimeSpan]::FromSeconds(2))
+  $win.BeginAnimation([Windows.UIElement]::OpacityProperty,$animIn)
+  $timer.Start()
 })
 
-# ESC para fechar
+# ESC fecha
 $win.Add_KeyDown({ if ($_.Key -eq 'Escape') { $win.Close() } })
 
-# Mostrar
-try { $win.ShowDialog() | Out-Null } catch { Write-UiError "ShowDialog error: $($_.Exception.Message)"; throw }
+$win.ShowDialog() | Out-Null
